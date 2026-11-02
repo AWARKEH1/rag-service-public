@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assistant Service-Public</title>
+<style>
+  :root { --bg:#f7f7f5; --fg:#1d232b; --muted:#5f6873; --line:#dcdfe3; --accent:#1f4fa3; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14181d; --fg:#e7eaee; --muted:#9aa3ad; --line:#2b323b; --accent:#8fb3f0; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 system-ui, sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:32px 16px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.sub { color:var(--muted); margin:0 0 20px; font-size:14px; }
+  form { display:flex; gap:8px; }
+  input { flex:1; font:inherit; padding:10px 12px; border:1px solid var(--line); border-radius:6px; background:transparent; color:inherit; }
+  button { font:inherit; padding:10px 16px; border:0; border-radius:6px; background:var(--accent); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.6; }
+  #answer { white-space:pre-wrap; margin-top:24px; }
+  ul { list-style:none; color:var(--muted); font-size:14px; padding-left:20px; }
+  a { color:var(--accent); }
+  footer { margin-top:40px; color:var(--muted); font-size:12.5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Assistant Service-Public</h1>
+  <p class="sub">Questions sur les démarches administratives, réponses sourcées à partir des fiches Service-Public.fr.</p>
+  <form id="f"><input id="q" placeholder="Ex. : Comment renouveler sa carte d'identité ?" required minlength="3" maxlength="500"><button id="b">Demander</button></form>
+  <div id="answer"></div>
+  <ul id="sources"></ul>
+  <footer>Projet personnel, sans lien avec l'administration. Données : Service-Public.gouv.fr / DILA, Licence Ouverte 2.0. Vérifiez toujours votre situation sur service-public.fr.</footer>
+</main>
+<script>
+const f = document.getElementById("f"), b = document.getElementById("b");
+const out = document.getElementById("answer"), src = document.getElementById("sources");
+f.addEventListener("submit", async (e) => {
+  e.preventDefault(); b.disabled = true; out.textContent = "Recherche…"; src.innerHTML = "";
+  try {
+    const r = await fetch("/ask", { method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ question: document.getElementById("q").value }) });
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    out.textContent = d.answer;
+    for (const s of d.sources) {
+      const li = document.createElement("li"), a = document.createElement("a");
+      a.href = s.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = s.title;
+      li.append(`[${s.refs.join("][")}] `, a); src.appendChild(li);
+    }
+  } catch { out.textContent = "Le service est indisponible pour le moment."; }
+  b.disabled = false;
+});
+</script>
+</body>
+</html>
